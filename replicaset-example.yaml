@@ -1,0 +1,51 @@
+apiVersion: apps/v1                         # Версия API для ресурсов типа ReplicaSet
+kind: ReplicaSet                            # Тип создаваемого объекта — ReplicaSet
+metadata:                                   # Метаданные объекта
+  name: nginx-replicaset                    # Имя ReplicaSet
+  namespace: default                        # Пространство имен, где будет создан объект
+  labels:                                   # Метки самого ReplicaSet
+    app: nginx                              # Метка для идентификации ресурса
+spec:                                       # Спецификация ReplicaSet (основные настройки)
+  replicas: 3                               # Желаемое количество Pod'ов
+  selector:                                 # Селектор — определяет, какими Pod'ами управлять
+    matchLabels:                            # Выбор Pod'ов по совпадению меток
+      app: nginx                            # ReplicaSet управляет Pod'ами с этой меткой
+  template:                                 # Шаблон Pod (на его основе создаются реплики)
+    metadata:                               # Метаданные создаваемых Pod'ов
+      labels:                               # Метки Pod'ов
+        app: nginx                          # ДОЛЖНО совпадать с selector.matchLabels
+    spec:                                   # Спецификация Pod
+      restartPolicy: Always                 # Политика перезапуска контейнера
+      containers:                           # Список контейнеров в Pod
+        - name: nginx                       # Имя контейнера
+          image: nginx:1.23                 # Docker-образ контейнера
+          ports:                            # Порты контейнера
+            - containerPort: 80             # Порт внутри контейнера
+          env:                              # Переменные окружения
+            - name: ENVIRONMENT             # Имя переменной
+              value: "production"           # Значение переменной
+          resources:                        # Ограничения и запросы ресурсов
+            requests:                       # Минимально гарантированные ресурсы
+              cpu: "100m"                   # 0.1 CPU
+              memory: "128Mi"               # 128 МБ памяти
+            limits:                         # Максимально допустимые ресурсы
+              cpu: "500m"                   # 0.5 CPU
+              memory: "256Mi"               # 256 МБ памяти
+          livenessProbe:                    # Проверка "живости" контейнера
+            httpGet:                        # Тип проверки — HTTP GET
+              path: /                       # Путь запроса
+              port: 80                      # Порт для проверки
+            initialDelaySeconds: 15         # Задержка перед первой проверкой
+            periodSeconds: 20               # Интервал между проверками
+          readinessProbe:                   # Проверка "готовности" контейнера
+            httpGet:                        # Тип проверки — HTTP GET
+              path: /                       # Путь запроса
+              port: 80                      # Порт проверки
+            initialDelaySeconds: 5          # Задержка перед первой проверкой
+            periodSeconds: 10               # Интервал между проверками
+          volumeMounts:                     # Подключение томов к контейнеру
+            - name: tmp-storage             # Имя тома (должно совпадать с volumes.name)
+              mountPath: /tmp               # Путь внутри контейнера
+      volumes:                              # Список томов Pod
+        - name: tmp-storage                 # Имя тома
+          emptyDir: {}                      # Временный том (удаляется при удалении Pod)
