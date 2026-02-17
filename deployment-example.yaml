@@ -1,0 +1,56 @@
+apiVersion: apps/v1                         # Версия API для Deployment
+kind: Deployment                            # Тип ресурса — Deployment
+metadata:                                   # Метаданные объекта
+  name: nginx-deployment                    # Имя Deployment
+  namespace: default                        # Пространство имен
+  labels:                                   # Метки Deployment
+    app: nginx                              # Идентификационная метка
+spec:                                       # Основная спецификация Deployment
+  replicas: 3                               # Количество Pod-реплик
+  selector:                                 # Селектор для управления Pod'ами
+    matchLabels:                            # Выбор Pod по совпадению меток
+      app: nginx                            # Должно совпадать с template.metadata.labels
+  strategy:                                 # Стратегия обновления
+    type: RollingUpdate                     # Тип обновления — поочередное
+    rollingUpdate:                          # Настройки Rolling Update
+      maxUnavailable: 1                     # Максимум 1 Pod может быть недоступен
+      maxSurge: 1                           # Максимум 1 дополнительный Pod во время обновления
+  template:                                 # Шаблон Pod
+    metadata:
+      labels:
+        app: nginx                          # Метка Pod (обязательно совпадает с selector)
+    spec:                                   # Спецификация Pod
+      restartPolicy: Always                 # Политика перезапуска (для Deployment всегда Always)
+      containers:                           # Список контейнеров
+        - name: nginx                       # Имя контейнера
+          image: nginx:1.23                 # Docker-образ
+          ports:                            # Открываемые порты
+            - containerPort: 80             # Порт внутри контейнера
+          env:                              # Переменные окружения
+            - name: ENVIRONMENT             # Имя переменной
+              value: "production"           # Значение переменной
+          resources:                        # Ограничения ресурсов
+            requests:                       # Минимально гарантированные ресурсы
+              cpu: "100m"                   # Запрос 0.1 CPU
+              memory: "128Mi"               # Запрос 128 MiB памяти
+            limits:                         # Максимальные лимиты
+              cpu: "500m"                   # Лимит 0.5 CPU
+              memory: "256Mi"               # Лимит 256 MiB памяти
+          livenessProbe:                    # Проверка "живости"
+            httpGet:                        # HTTP-запрос
+              path: /                       # Путь проверки
+              port: 80                      # Порт проверки
+            initialDelaySeconds: 15         # Задержка перед первой проверкой
+            periodSeconds: 20               # Интервал между проверками
+          readinessProbe:                   # Проверка "готовности"
+            httpGet:                        # HTTP-запрос
+              path: /                       # Путь проверки
+              port: 80                      # Порт проверки
+            initialDelaySeconds: 5          # Задержка перед первой проверкой
+            periodSeconds: 10               # Интервал между проверками
+          volumeMounts:                     # Подключение томов
+            - name: tmp-storage             # Имя тома
+              mountPath: /tmp               # Путь внутри контейнера
+      volumes:                              # Список томов Pod
+        - name: tmp-storage                 # Имя тома
+          emptyDir: {}                      # Временный том (удаляется при удалении Pod)
