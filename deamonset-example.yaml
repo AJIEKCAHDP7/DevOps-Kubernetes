@@ -1,1 +1,51 @@
 
+apiVersion: apps/v1                         # Версия API для контроллеров (Deployment, ReplicaSet, DaemonSet)
+kind: DaemonSet                             # Тип ресурса — DaemonSet (по одному Pod на каждую Node)
+metadata:                                   # Метаданные объекта Kubernetes
+  name: nginx-daemonset                     # Имя создаваемого DaemonSet
+  namespace: default                        # Namespace, где будет создан ресурс
+  labels:                                   # Метки самого DaemonSet
+    app: nginx                              # Метка для идентификации ресурса
+spec:                                       # Основная спецификация DaemonSet
+  selector:                                 # Селектор — определяет, какими Pod'ами управлять
+    matchLabels:                            # Выбор Pod'ов по совпадению меток
+      app: nginx                            # Должно совпадать с template.metadata.labels
+  template:                                 # Шаблон Pod (создаётся на каждой Node)
+    metadata:                               # Метаданные Pod
+      labels:                               # Метки создаваемых Pod'ов
+        app: nginx                          # Обязательно совпадает с selector.matchLabels
+    spec:                                   # Спецификация самого Pod
+      restartPolicy: Always                 # Политика перезапуска контейнера (по умолчанию Always)
+      containers:                           # Список контейнеров внутри Pod
+        - name: nginx                       # Имя контейнера
+          image: nginx:1.23                 # Docker-образ контейнера
+          ports:                            # Порты, которые контейнер слушает
+            - containerPort: 80             # Порт внутри контейнера
+          env:                              # Переменные окружения
+            - name: ENVIRONMENT             # Имя переменной окружения
+              value: "production"           # Значение переменной
+          resources:                        # Настройки ресурсов контейнера
+            requests:                       # Минимально гарантированные ресурсы
+              cpu: "100m"                   # Запрос 0.1 CPU
+              memory: "128Mi"               # Запрос 128 МБ памяти
+            limits:                         # Максимально допустимые ресурсы
+              cpu: "500m"                   # Лимит 0.5 CPU
+              memory: "256Mi"               # Лимит 256 МБ памяти
+          livenessProbe:                    # Проверка "живости" контейнера
+            httpGet:                        # Метод проверки — HTTP GET
+              path: /                       # Путь для проверки
+              port: 80                      # Порт для запроса
+            initialDelaySeconds: 15         # Задержка перед первой проверкой
+            periodSeconds: 20               # Интервал между проверками
+          readinessProbe:                   # Проверка "готовности" контейнера
+            httpGet:                        # Метод проверки — HTTP GET
+              path: /                       # Путь проверки
+              port: 80                      # Порт проверки
+            initialDelaySeconds: 5          # Задержка перед первой проверкой
+            periodSeconds: 10               # Интервал между проверками
+          volumeMounts:                     # Подключение томов внутрь контейнера
+            - name: tmp-storage             # Имя тома (должно совпадать с volumes.name)
+              mountPath: /tmp               # Путь внутри контейнера
+      volumes:                              # Описание томов Pod
+        - name: tmp-storage                 # Имя тома
+          emptyDir: {}                      # Временный том (удаляется вместе с Pod)
