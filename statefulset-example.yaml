@@ -1,0 +1,98 @@
+apiVersion: v1                          # API для Secret
+kind: Secret                            # Тип ресурса
+metadata:
+  name: mysql-secret                    # Имя секрета
+type: Opaque                            # Обычный secret
+stringData:                             # Удобно задавать строки (k8s сам закодирует в base64)
+  MYSQL_ROOT_PASSWORD: "StrongPass123!" # Root пароль (поменяй!)
+---
+apiVersion: v1                 # API для Service
+kind: Service                  # Тип ресурса
+metadata:
+  name: mysql                  # Имя сервиса (будет в serviceName у StatefulSet)
+spec:
+  clusterIP: None              # Headless Service (без ClusterIP)
+  selector:
+    app: mysql                 # Выбираем Pod'ы по label
+  ports:
+    - name: mysql              # Имя порта
+      port: 3306               # Порт сервиса
+      targetPort: 3306         # Порт контейнера
+---
+apiVersion: apps/v1                       # API для StatefulSet
+kind: StatefulSet                        # Тип ресурса
+metadata:
+  name: mysql                            # Имя StatefulSet
+spec:
+  serviceName: mysql                     # Должно совпадать с headless service выше
+  replicas: 1                            # Для одиночного MySQL ставим 1
+  selector:
+    matchLabels:
+      app: mysql                         # Селектор Pod'ов
+  template:
+    metadata:
+      labels:
+        app: mysql                       # Label Pod'ов
+    spec:
+      containers:
+        - name: mysql                    # Имя контейнера
+          image: mysql:8.0               # Версия MySQL
+          ports:
+            - name: mysql
+              containerPort: 3306        # Порт MySQL в контейнере
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD  # Переменная окружения для root пароля
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret     # Берём из Secret
+                  key: MYSQL_ROOT_PASSWORD
+
+            # Опционально: можно сразу создать БД и пользователя:
+            # - name: MYSQL_DATABASE
+            #   value: appdb
+            # - name: MYSQL_USER
+            #   value: appuser
+            # - name: MYSQL_PASSWORD
+            #   value: AppPass123!
+
+          volumeMounts:
+            - name: data                 # Имя тома (PVC шаблон ниже)
+              mountPath: /var/lib/mysql  # Директория данных MySQL
+
+          readinessProbe:                # Готовность: когда можно пускать трафик
+            exec:
+              command:
+                - sh
+                - -c
+                - "mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          livenessProbe:                 # Жив ли контейнер
+            exec:
+              command:
+                - sh
+                - -c
+                - "mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"
+            initialDelaySeconds: 30
+            periodSeconds: 20
+
+          resources:                     # Ресурсы (подстрой под свой кластер)
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+  volumeClaimTemplates:                  # Для каждого Pod будет свой PVC
+    - metadata:
+        name: data                       # Получится PVC: data-mysql-0
+      spec:
+        accessModes:
+          - ReadWriteOnce                # Обычно так для блочного диска
+        storageClassName: standard       # В Minikube обычно standard (hostPath)
+        resources:
+          requests:
+            storage: 5Gi                 # Размер диска
