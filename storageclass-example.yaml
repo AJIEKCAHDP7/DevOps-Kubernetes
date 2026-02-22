@@ -1,0 +1,10 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: minikube-hostpath
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false" # поставь "true", если хочешь сделать default
+provisioner: k8s.io/minikube-hostpath                    # hostPath provisioner minikube
+reclaimPolicy: Delete                                    # удалит PV при удалении PVC
+volumeBindingMode: Immediate                             # для single-node ок
+allowVolumeExpansion: true                               # если minikube-провижионер поддерживает
