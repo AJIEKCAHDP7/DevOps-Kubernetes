@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: example-limitrange
+  namespace: default
+spec:
+  limits:
+    - type: Container                  # Ограничения для контейнеров
+      min:
+        cpu: "100m"                    # Минимум CPU
+        memory: "128Mi"                # Минимум памяти
+      max:
+        cpu: "1000m"                   # Максимум CPU (1 core)
+        memory: "1Gi"                  # Максимум памяти
+      default:
+        cpu: "500m"                    # Если не указано — будет 500m
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "200m"
+        memory: "256Mi"
