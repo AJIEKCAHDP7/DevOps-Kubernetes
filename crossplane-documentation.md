@@ -324,3 +324,70 @@ On-prem Kubernetes
 ❌ Credentials error → неправильно создан Secret
 
 ❌ API version mismatch → версия provider не совпадает
+
+
+CLI для Crossplane — это утилита:
+
+🧰 crossplane CLI
+
+Она нужна для:
+
+сборки Configuration / Provider пакетов
+
+валидации Compositions
+
+локальной разработки платформы
+
+Для обычного использования (создание Bucket/RDS через CR) CLI не обязателен — достаточно kubectl.
+
+Установка crossplane CLI
+Linux (amd64)
+curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh
+
+Бинарник появится в текущей директории. Переместите:
+
+sudo mv crossplane /usr/local/bin/
+
+Проверка:
+
+crossplane version
+Через Homebrew (macOS / Linux)
+brew install crossplane/tap/crossplane
+
+Проверка:
+
+crossplane version
+Windows (PowerShell)
+irm https://raw.githubusercontent.com/crossplane/crossplane/master/install.ps1 | iex
+Что умеет CLI
+Проверка Composition
+crossplane beta validate composition composition.yaml
+Сборка configuration package
+crossplane xpkg build -f package
+Публикация в registry
+crossplane xpkg push xpkg.upbound.io/org/package:v1
+Частая ошибка
+
+Если после установки:
+
+command not found
+
+Проверьте:
+
+echo $PATH
+
+И что /usr/local/bin там присутствует.
+
+Нужно ли ставить CLI?
+
+Ставить обязательно если:
+
+вы делаете свою Internal Developer Platform
+
+пишете Compositions
+
+собираете provider/config пакеты
+
+Не обязательно если:
+
+вы просто используете готовые CRD
