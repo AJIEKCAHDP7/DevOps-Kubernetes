@@ -1,0 +1,11 @@
+apiVersion: v1                    # Версия Kubernetes API
+kind: ConfigMap                   # Тип ресурса
+metadata:                         # Метаданные объекта
+  name: app-config                # Имя ConfigMap
+  namespace: default              # Namespace, где создается ConfigMap
+  labels:                         # Метки для идентификации объекта
+    app: my-app
+data:                             # Конфигурационные данные
+  APP_ENV: "production"           # Переменная окружения
+  APP_DEBUG: "false"              # Флаг debug режима
+  APP_PORT: "8080"                # Порт приложения
